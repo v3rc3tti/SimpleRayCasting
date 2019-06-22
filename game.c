@@ -65,7 +65,7 @@ void GameMain(int bufWidth, int bufHeight)
 	}
 
 	//Rendering
-	float step = 0.1f;
+	float step = 0.01f;
 	float ang = playerA - fov / 2;
 	float dAng = 1.f / bufWidth;
 	for (int x = 0; x < bufWidth; x++) {
@@ -82,7 +82,7 @@ void GameMain(int bufWidth, int bufHeight)
 			distToWall += step;
 			if (map[(int)rayY*mapWidth + (int)rayX] == 'x') {
 				hitWall = true;
-				int wallHeight = 500.f / distToWall;
+				int wallHeight = screenHeight / (distToWall*cosf(ang-playerA));
 				int ceiling = (screenHeight-wallHeight) / 2;
 				int floor = wallHeight + ceiling;
 				for (int y = 0; y < screenHeight; y++) {
