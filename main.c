@@ -14,6 +14,9 @@ void *bitmapMem;
 uint8_t keys[256];
 int screenWidth = 800;
 int screenHeight = 640;
+BITMAP bmWall;
+
+HWND whd;
 
 void InitWinBuffer(int width, int height)
 {
@@ -21,7 +24,7 @@ void InitWinBuffer(int width, int height)
 	bitHdc = CreateCompatibleDC(0);
   }
   if(bitmapMem){
-	VirtualFree(NULL, 0, MEM_RELEASE);
+	VirtualFree(bitmapMem, 0, MEM_RELEASE);
   }
   bitmapInfo.bmiHeader.biSize = sizeof(bitmapInfo.bmiHeader);
   bitmapInfo.bmiHeader.biWidth = width;
@@ -34,7 +37,7 @@ void InitWinBuffer(int width, int height)
   bitmapMem = VirtualAlloc(NULL, bitmapSize, MEM_COMMIT, PAGE_READWRITE); 
 }
 
-LRESULT CALLBACK WindowProc(HWND   hWnd, UINT   uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch(uMsg){
 		case WM_KEYDOWN:
@@ -96,8 +99,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 		MessageBox(NULL, L"CreateWindow", L"Error!", MB_ICONERROR|MB_OK);
 		return 0;		
 	}
-
+	whd = hWnd;
 	InitWinBuffer(screenWidth, screenHeight);
+	TextureLoader(&bmWall);
 	ShowWindow(hWnd, iCmdShow);
 	UpdateWindow(hWnd);
 	MSG msg={0};
