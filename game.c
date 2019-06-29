@@ -11,44 +11,39 @@ extern void *bitmapMem; //screen memory
 extern int screenWidth;
 extern int screenHeight;
 extern uint8_t keys[256];
-extern BITMAP bmWall;
+extern HWND WndHandle;
 
-const char *map = "xxxxxxxxxxxxxxxx" 
-				  "x...........x..x"
-				  "x...........x..x"
-				  "x...........x..x"
-				  "x...........x..x"
-				  "x.....xxxxxxx..x"
-				  "x..............x"
-			      "x..............x"
-				  "x..............x"
-				  "x..............x"
-				  "x..............x"
-				  "xxxxxxxxxxxxxxxx";
-int mapWidth = 16;
+const char *map = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" 
+				  "x.........................x....x"
+				  "x.........................x....x"
+				  "x.........................x....x"
+				  "x.........................x....x"
+				  "x..............................x"
+				  "x..............................x"
+			      "x..............................x"
+				  "x..............................x"
+				  "x..............................x"
+				  "x..............................x"
+				  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+int mapWidth = 32;
 int mapHeight = 12;
 
 float playerX = 2.f;
 float playerY = 2.f;
 float playerA = 0.5f;
 float fov = 60 * (float)M_PI / 180;
-int oldTime, curTime;
 
-extern whd;
+BITMAP bmWall;
+
 void GameMain(int bufWidth, int bufHeight)
 {
-	curTime = GetTickCount();
-	int dltTime = curTime - oldTime;
-	oldTime = curTime;
-	float FPS = 1000 / dltTime;
-	wchar_t capt[256];
-	swprintf(capt, 256, L"FPS:%f", FPS);
-	SetWindowText(whd, capt);
-	//Keys processing
-	KeyboardProc();
+	int dTime = CalcDeltaTime();
+
+	//Keyboard processing
+	ControlProc(dTime);
 
 	//Rendering
-	float step = 0.01f;
+	float step = RAY_STEP;
 	float ang = playerA - fov / 2;
 	float dAng = 1.f / bufWidth;
 	for (int x = 0; x < bufWidth; x++) {
@@ -65,49 +60,12 @@ void GameMain(int bufWidth, int bufHeight)
 			distToWall += step;
 			if (map[(int)rayY*mapWidth + (int)rayX] == 'x') {
 				hitWall = true;
-				int wallHeight = screenHeight / (distToWall*cosf(ang-playerA));
-				if (wallHeight > screenHeight*5) {
-					wallHeight = screenHeight *5;
-				}
-				int ceiling = (screenHeight-wallHeight) / 2;
-				int floor = wallHeight + ceiling;
-				float hitX = rayX - floorf(rayX+0.5f);
-				float hitY = rayY - floorf(rayY+0.5f);
-				float hitnom = fabs(hitX) > fabs(hitY) ? hitX : hitY;
-				int column = bmWall.bmWidth*(hitnom)+bmWall.bmWidth;
-				uint32_t *texLine = GetVertLine(bmWall, wallHeight, column);
-				int l = 0;
-				for (int y = 0; y < screenHeight; y++) {
-					Color col = { 0 };
-					if (y < ceiling) {
-						col.r = 0; col.g = 0; col.b = 0;
-					}
-					else if (y >= ceiling && y <= floor) {
-						col.r = texLine[l] & 255;
-						col.g = (texLine[l] >> 8) & 255;
-						col.b = (texLine[l] >> 16) & 255;
-						l++;
-						if (distToWall > 1.f) {
-							col.r /= distToWall;
-							col.g /= distToWall;
-							col.b /= distToWall;
-						}
-						/*else if(distToWall<0.5f){
-							col.r *= distToWall;
-							col.g *= distToWall;
-							col.b *= distToWall;
-						}*/
-					}
-					else {
-						col.r = 0; col.g = 0; col.b = 0;
-					}
-					DrawPixel(x, y, col);
-				}
-				FreeLineMem(texLine);
+				DrawPaling(rayX, rayY, x, ang, distToWall);
 			}
 		}
 	}
 	DrawMap(mapWidth, mapHeight);
+	Sleep(30);
 }
 
 void DrawMap(int mapWidth, int mapHeight)
@@ -168,7 +126,7 @@ uint32_t *GetVertLine(BITMAP bm, int lineHeight, int column)
 	int start = 0, end = lineHeight;
 	if (lineHeight > screenHeight) {
 		start = (lineHeight - screenHeight) / 2;
-		end = (start + screenHeight);
+		end = start + screenHeight;
 	}
 	uint32_t *line = VirtualAlloc(NULL, screenHeight * sizeof(uint32_t), MEM_COMMIT, PAGE_READWRITE);
 	int texHeight = bm.bmHeight;
@@ -190,12 +148,12 @@ void FreeLineMem(uint32_t *line)
 	VirtualFree(line, 0, MEM_RELEASE);
 }
 
-void KeyboardProc(void)
+void ControlProc(int dTime)
 {
 	float oldPlayerX = playerX;
 	float oldPlayerY = playerY;
 
-	float speedRatio = 0.1f;
+	float speedRatio = dTime/500.f;
 	if (keys[0x57]) {
 		playerX += cosf(playerA)*speedRatio;
 		playerY += sinf(playerA)*speedRatio;
@@ -222,4 +180,61 @@ void KeyboardProc(void)
 		playerX = oldPlayerX;
 		playerY = oldPlayerY;
 	}
+}
+
+void GameInit(void)
+{
+	TextureLoader(&bmWall);
+}
+
+int CalcDeltaTime(void)
+{
+	static oldTime = 0;
+
+	int curTime = GetTickCount();
+	int dltTime = curTime - oldTime;
+	oldTime = curTime;
+	float FPS = 1000 / dltTime;
+	wchar_t capt[256];
+	swprintf(capt, 256, L"FPS:%f", FPS);
+	SetWindowText(WndHandle, capt);
+	return dltTime;
+}
+
+void DrawPaling(float rayX, float rayY, int x, float ang, float distToWall)
+{
+	int wallHeight = screenHeight / (distToWall*cosf(ang - playerA));
+	if (wallHeight > screenHeight * 5) {
+		wallHeight = screenHeight * 5;
+	}
+	float hitX = rayX - floorf(rayX + 0.5f);
+	float hitY = rayY - floorf(rayY + 0.5f);
+	float texShift = fabs(hitX) > fabs(hitY) ? hitX : hitY;
+	int ceiling = (screenHeight - wallHeight) / 2;
+	int floor = wallHeight + ceiling;
+	int column = bmWall.bmWidth*(texShift)+bmWall.bmWidth;
+	uint32_t *texLine = GetVertLine(bmWall, wallHeight, column);
+	int l = 0;
+	for (int y = 0; y < screenHeight; y++) {
+		Color col = { 0 };
+		if (y <= ceiling) {
+			col.r = 250; col.g = 0; col.b = 0;
+		}
+		else if (y > ceiling && y < floor) {
+			col.r = texLine[l] & 255;
+			col.g = (texLine[l] >> 8) & 255;
+			col.b = (texLine[l] >> 16) & 255;
+			l++;
+			if (distToWall > 1.f) {
+				col.r /= distToWall;
+				col.g /= distToWall;
+				col.b /= distToWall;
+			}
+		}
+		else {
+			col.r = 0; col.g = 0; col.b = 50;
+		}
+		DrawPixel(x, y, col);
+	}
+	FreeLineMem(texLine);
 }

@@ -14,9 +14,8 @@ void *bitmapMem;
 uint8_t keys[256];
 int screenWidth = 800;
 int screenHeight = 640;
-BITMAP bmWall;
 
-HWND whd;
+HWND WndHandle;
 
 void InitWinBuffer(int width, int height)
 {
@@ -99,9 +98,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 		MessageBox(NULL, L"CreateWindow", L"Error!", MB_ICONERROR|MB_OK);
 		return 0;		
 	}
-	whd = hWnd;
+	WndHandle = hWnd;
+	GameInit();
 	InitWinBuffer(screenWidth, screenHeight);
-	TextureLoader(&bmWall);
 	ShowWindow(hWnd, iCmdShow);
 	UpdateWindow(hWnd);
 	MSG msg={0};
