@@ -19,21 +19,16 @@ HWND WndHandle;
 
 void InitWinBuffer(int width, int height)
 {
-  if(!bitHdc){
 	bitHdc = CreateCompatibleDC(0);
-  }
-  if(bitmapMem){
-	VirtualFree(bitmapMem, 0, MEM_RELEASE);
-  }
-  bitmapInfo.bmiHeader.biSize = sizeof(bitmapInfo.bmiHeader);
-  bitmapInfo.bmiHeader.biWidth = width;
-  bitmapInfo.bmiHeader.biHeight = -height;
-  bitmapInfo.bmiHeader.biPlanes = 1;
-  bitmapInfo.bmiHeader.biBitCount = 32;
-  bitmapInfo.bmiHeader.biCompression = BI_RGB;
+	bitmapInfo.bmiHeader.biSize = sizeof(bitmapInfo.bmiHeader);
+	bitmapInfo.bmiHeader.biWidth = width;
+	bitmapInfo.bmiHeader.biHeight = -height;
+	bitmapInfo.bmiHeader.biPlanes = 1;
+	bitmapInfo.bmiHeader.biBitCount = 32;
+	bitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-  bitmapSize = 4*width*height;
-  bitmapMem = VirtualAlloc(NULL, bitmapSize, MEM_COMMIT, PAGE_READWRITE); 
+	bitmapSize = 4*width*height;
+	bitmapMem = VirtualAlloc(NULL, bitmapSize, MEM_COMMIT, PAGE_READWRITE); 
 }
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -90,8 +85,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	RECT rect = { 0 };
 	rect.right = screenWidth;
 	rect.bottom = screenHeight;
-	AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
-	HWND hWnd = CreateWindowEx(0, WinClName, L"Game v0.1", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+	AdjustWindowRect(&rect, WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX, FALSE);
+	HWND hWnd = CreateWindowEx(0, WinClName, L"Game v0.1", 
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT,
   		CW_USEDEFAULT, rect.right-rect.left, rect.bottom-rect.top, NULL, NULL, hInstance, NULL);
 
 	if(!hWnd){
