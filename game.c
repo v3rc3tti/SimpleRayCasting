@@ -35,6 +35,7 @@ float fov = 60 * (float)M_PI / 180;
 float depthBuf[800];
 
 BITMAP bmWall;
+BITMAP bmSprite;
 Sprite *sprites;
 
 void GameMain(int bufWidth, int bufHeight)
@@ -105,9 +106,9 @@ void DrawPixel(int x, int y, Color col)
 	screen[y*screenWidth + x] = (col.r << 16) | (col.g << 8) | col.b;
 }
 
-void TextureLoader(BITMAP *bm)
+void TextureLoader(BITMAP *bm, wchar_t *filename)
 {
-	HBITMAP hTexture = LoadImage(NULL, L"texture.bmp", IMAGE_BITMAP, 0, 0,
+	HBITMAP hTexture = LoadImage(NULL, filename, IMAGE_BITMAP, 0, 0,
 		LR_LOADFROMFILE | LR_CREATEDIBSECTION);
 	GetObject(hTexture, sizeof(BITMAP), bm);
 }
@@ -183,14 +184,19 @@ void ControlProc(int dTime)
 
 void GameInit(void)
 {
-	TextureLoader(&bmWall);
+	TextureLoader(&bmWall, L"texture.bmp");
+	TextureLoader(&bmSprite, L"sprite.bmp");
+	sprites =(Sprite*) malloc(sizeof(Sprite));
+	sprites[0].index = 1;
+	sprites[0].x = 3.f;
+	sprites[0].y = 3.f;
 }
 
 void DrawPaling(float rayX, float rayY, int x, float ang, float distToWall, int index)
 {
 	int wallHeight = screenHeight / (distToWall*cosf(ang - playerA));
-	if (wallHeight > screenHeight * 5) {
-		wallHeight = screenHeight * 5;
+	if (wallHeight > screenHeight * 10) {
+		wallHeight = screenHeight * 10;
 	}
 	float hitX = rayX - floorf(rayX + 0.5f);
 	float hitY = rayY - floorf(rayY + 0.5f);
@@ -255,6 +261,7 @@ void DrawSprites(Sprite *sprites, int count)
 		float VecSprX = sprites[i].x - playerX;
 		float VecSprY = sprites[i].y - playerY;
 		float toSprite = sqrt(VecSprX*VecSprX + VecSprY * VecSprY);
+		if (toSprite < 0.2f) {continue;}
 		float angSpr = atan2(VecSprY, VecSprX);
 		if (angSpr - playerA > M_PI) angSpr -= 2 * M_PI;
 		if (angSpr - playerA < -M_PI) angSpr += 2 * M_PI;
@@ -266,13 +273,19 @@ void DrawSprites(Sprite *sprites, int count)
 		int startY = (screenHeight - width) / 2;
 
 		Color col = { 255.f, 0.f, 0.f };
-		uint32_t *screen = bitmapMem;
-		for (int y = startY; y < startY + width; y++) {
-			if (y < 0 || y >= screenHeight) {continue;}
-			for (int x = startX; x < startX + width; x++) {
-				if (x < 0 || x >= screenWidth) {continue;}
+		int index = sprites[i].index;
+		for (int x = startX; x < startX + width; x++) {
+			if (x < 0 || x >= screenWidth) {continue;}
+			uint32_t *line = GetVertLine(bmSprite, width, TEXTURE_WIDTH*(x-startX)/width, index);
+			int l = 0;
+			for (int y = startY; y < startY + width; y++, l++) {
+				if (y < 0 || y >= screenHeight || line[l]==0x00FFFFFF) { continue; }
+				col.r = line[l] & 255;
+				col.g = (line[l] >> 8) & 255;
+				col.b = (line[l] >> 16) & 255;
 				DrawPixel(x, y, col);
 			}
+			FreeLineMem(line);
 		}
 	}//for sprites
 }
