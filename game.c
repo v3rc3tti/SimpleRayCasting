@@ -270,16 +270,21 @@ void DrawSprites(Sprite *sprites, int count)
 		float dltAng = angSpr - (playerA - fov / 2);
 		int c = (dltAng / fov)*screenWidth;
 		int startX = c - width / 2;
-		int startY = (screenHeight - width) / 2;
+		int startY = 0;
+		int stopY = screenHeight;
+		if (width <= screenHeight) {
+			startY = (screenHeight - width) / 2;
+			stopY = (screenHeight + width) / 2;
+		}
 
 		Color col = { 255.f, 0.f, 0.f };
 		int index = sprites[i].index;
 		for (int x = startX; x < startX + width; x++) {
 			if (x < 0 || x >= screenWidth) {continue;}
 			uint32_t *line = GetVertLine(bmSprite, width, TEXTURE_WIDTH*(x-startX)/width, index);
-			int l = 0;
-			for (int y = startY; y < startY + width; y++, l++) {
-				if (y < 0 || y >= screenHeight || line[l]==0x00FFFFFF) { continue; }
+			int l, y;
+			for (y=startY, l=0; y < stopY; y++, l++) {
+				if (line[l]==0x00FFFFFF) { continue; }
 				col.r = line[l] & 255;
 				col.g = (line[l] >> 8) & 255;
 				col.b = (line[l] >> 16) & 255;
